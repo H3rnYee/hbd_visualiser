@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HDB Resale Price Visualizer</title>
+    
+    <!-- Load libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <style>
+        .chart-container {
+            height: 400px;
+            margin-bottom: 2rem;
+        }
+        #heatmap {
+            height: 600px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-4">
+        <h1 class="text-center mb-4">Singapore HDB Resale Price Analysis</h1>
+        
+        <!-- Town Selector -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <label for="townSelect" class="form-label">Select Town:</label>
+                <select id="townSelect" class="form-select">
+                    <option value="">Loading towns...</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- Price Trend Chart -->
+        <div class="card mb-4">
+            <div class="card-header">Price Trend Over Time</div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Price Heatmap -->
+        <div class="card">
+            <div class="card-header">Price Distribution by Town and Flat Type</div>
+            <div class="card-body">
+                <div id="heatmap" class="chart-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const townSelect = document.getElementById('townSelect');
+        const trendCtx = document.getElementById('trendChart').getContext('2d');
+        
+        // Initialize Charts
+        let trendChart = null;
+        
+        // Load initial data
+        async function initApp() {
+            // Load towns
+            const towns = await fetch('/api/towns').then(res => res.json());
+            populateTownDropdown(towns);
+            
+            // Load heatmap data
+            loadHeatmap();
+        }
+        
+        function populateTownDropdown(towns) {
+            townSelect.innerHTML = '';
+            towns.forEach(town => {
+                const option = document.createElement('option');
+                option.value = town;
+                option.textContent = town;
+                townSelect.appendChild(option);
+            });
+            
+            // Add event listener
+            townSelect.addEventListener('change', loadTownData);
+        }
+        
+        async function loadTownData() {
+            const town = townSelect.value;
+            if (!town) return;
+            
+            const data = await fetch(`/api/town/${town}`).then(res => res.json());
+            renderTrendChart(data);
+        }
+        
+        function renderTrendChart(data) {
+            if (trendChart) trendChart.destroy();
+            
+            trendChart = new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: data.map(item => item.month),
+                    datasets: [{
+                        label: 'Average Resale Price',
+                        data: data.map(item => item.resale_price),
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1
+                    }, {
+                        label: 'Price per sqm',
+                        data: data.map(item => item.price_per_sqm),
+                        borderColor: 'rgb(255, 99, 132)',
+                        yAxisID: 'y1'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            title: { display: true, text: 'Resale Price (SGD)' }
+                        },
+                        y1: {
+                            position: 'right',
+                            title: { display: true, text: 'Price per sqm (SGD)' },
+                            grid: { drawOnChartArea: false }
+                        }
+                    }
+                }
+            });
+        }
+        
+        async function loadHeatmap() {
+            const data = await fetch('/api/heatmap').then(res => res.json());
+            renderHeatmap(data);
+        }
+        
+        function renderHeatmap(data) {
+            // Prepare data for Chart.js
+            const towns = [...new Set(data.map(item => item.town))];
+            const flatTypes = [...new Set(data.map(item => item.flat_type))];
+            
+            const datasets = flatTypes.map(flatType => ({
+                label: flatType,
+                data: towns.map(town => {
+                    const item = data.find(d => d.town === town && d.flat_type === flatType);
+                    return item ? item.price_per_sqm : null;
+                })
+            }));
+            
+            const heatmapCtx = document.getElementById('heatmap').getContext('2d');
+            new Chart(heatmapCtx, {
+                type: 'bar',
+                data: {
+                    labels: towns,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { stacked: true },
+                        y: { 
+                            stacked: true,
+                            title: { display: true, text: 'Price per sqm (SGD)' }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Initialize application
+        initApp();
+    </script>
+</body>
+</html>
