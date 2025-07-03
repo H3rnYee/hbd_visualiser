@@ -60,12 +60,22 @@
         
         <!-- Price Heatmap --> <!-- This is another graph sorted by town and flat type-->
         <div class="card">
-            <div class="card-header">Price Distribution by Town and Flat Type</div>
-            <div class="card-body">
-                <div id="heatmap" class="chart-container"></div>
-            </div>
+    <div class="card-header">
+        <h3>Price Distribution by Town and Flat Type (SGD/sqm)</h3>
+        <div class="form-group">
+            <label for="colorScheme">Color Scheme:</label>
+            <select id="colorScheme" class="form-control">
+                <option value="YlOrRd">Yellow-Orange-Red</option>
+                <option value="Blues">Blues</option>
+                <option value="Greens">Greens</option>
+            </select>
         </div>
     </div>
+    <div class="card-body">
+        <div id="heatmap"></div>
+        <div id="legend"></div>
+    </div>
+</div>
 
     <script>
         // DOM Elements
@@ -180,6 +190,161 @@
                 }
             });
         }
+        let heatmapData = [];
+let currentColorScheme = d3.interpolateYlOrRd;
+
+async function loadHeatmap() {
+    heatmapData = await fetch('/api/heatmap').then(res => res.json());
+    renderHeatmap();
+}
+
+function renderHeatmap() {
+    d3.select("#heatmap").html("");
+    d3.select("#legend").html("");
+    
+    // Prepare data
+    const towns = [...new Set(heatmapData.map(d => d.town))].sort();
+    const flatTypes = [...new Set(heatmapData.map(d => d.flat_type))].sort();
+    
+    // Set dimensions
+    const cellSize = 35;
+    const width = flatTypes.length * cellSize + 150;
+    const height = towns.length * cellSize + 50;
+    
+    // Create SVG
+    const svg = d3.select("#heatmap")
+        .append("svg")
+        .attr("width", width)
+        .attr("height", height);
+    
+    // Create color scale
+    const colorScale = d3.scaleSequential(currentColorScheme)
+        .domain([d3.min(heatmapData, d => d.price_per_sqm), 
+                d3.max(heatmapData, d => d.price_per_sqm)]);
+    
+    // Create tooltip
+    const tooltip = d3.select("body")
+        .append("div")
+        .attr("class", "heatmap-tooltip")
+        .style("opacity", 0);
+    
+    // Create heatmap cells
+    const cells = svg.selectAll(".heatmap-cell")
+        .data(heatmapData)
+        .enter()
+        .append("g")
+        .attr("class", "heatmap-cell")
+        .attr("transform", d => `translate(${flatTypes.indexOf(d.flat_type) * cellSize + 100}, 
+                                          ${towns.indexOf(d.town) * cellSize + 30})`);
+    
+    cells.append("rect")
+        .attr("width", cellSize - 2)
+        .attr("height", cellSize - 2)
+        .attr("rx", 3)
+        .attr("ry", 3)
+        .style("fill", d => colorScale(d.price_per_sqm))
+        .on("mouseover", (event, d) => {
+            tooltip.transition().duration(200).style("opacity", .9);
+            tooltip.html(`${d.town} - ${d.flat_type}<br>$${d.price_per_sqm.toFixed(0)}/sqm`)
+                .style("left", (event.pageX + 5) + "px")
+                .style("top", (event.pageY - 28) + "px");
+        })
+        .on("mouseout", () => tooltip.style("opacity", 0));
+    
+    // Add text labels
+    cells.append("text")
+        .attr("x", cellSize / 2)
+        .attr("y", cellSize / 2)
+        .attr("dy", "0.35em")
+        .attr("text-anchor", "middle")
+        .style("font-size", "10px")
+        .style("fill", d => d3.hsl(colorScale(d.price_per_sqm)).l > 0.7 ? "#333" : "#fff")
+        .text(d => d.price_per_sqm.toFixed(0));
+    
+    // Add town labels
+    svg.selectAll(".town-label")
+        .data(towns)
+        .enter()
+        .append("text")
+        .attr("class", "town-label")
+        .attr("x", 90)
+        .attr("y", (d, i) => i * cellSize + cellSize / 2 + 30)
+        .attr("text-anchor", "end")
+        .style("font-size", "12px")
+        .text(d => d);
+    
+    // Add flat type labels
+    svg.selectAll(".flattype-label")
+        .data(flatTypes)
+        .enter()
+        .append("text")
+        .attr("class", "flattype-label")
+        .attr("x", (d, i) => i * cellSize + cellSize / 2 + 100)
+        .attr("y", 20)
+        .attr("transform", "rotate(-45)")
+        .attr("text-anchor", "start")
+        .style("font-size", "11px")
+        .text(d => d);
+    
+    // Create legend
+    createLegend(colorScale);
+}
+
+function createLegend(colorScale) {
+    const legendWidth = 300;
+    const legendHeight = 20;
+    const legendSvg = d3.select("#legend")
+        .append("svg")
+        .attr("width", legendWidth + 100)
+        .attr("height", legendHeight + 30);
+    
+    const gradient = legendSvg.append("defs")
+        .append("linearGradient")
+        .attr("id", "legend-gradient")
+        .attr("x1", "0%").attr("y1", "0%")
+        .attr("x2", "100%").attr("y2", "0%");
+    
+    const minValue = d3.min(heatmapData, d => d.price_per_sqm);
+    const maxValue = d3.max(heatmapData, d => d.price_per_sqm);
+    
+    gradient.selectAll("stop")
+        .data(d3.range(0, 1.01, 0.1))
+        .enter()
+        .append("stop")
+        .attr("offset", d => `${d * 100}%`)
+        .attr("stop-color", d => colorScale(minValue + d * (maxValue - minValue)));
+    
+    legendSvg.append("rect")
+        .attr("width", legendWidth)
+        .attr("height", legendHeight)
+        .style("fill", "url(#legend-gradient)");
+    
+    // Add legend scale
+    const legendScale = d3.scaleLinear()
+        .domain([minValue, maxValue])
+        .range([0, legendWidth]);
+    
+    const legendAxis = d3.axisBottom(legendScale)
+        .ticks(5)
+        .tickFormat(d => `$${d.toFixed(0)}`);
+    
+    legendSvg.append("g")
+        .attr("transform", `translate(0, ${legendHeight})`)
+        .call(legendAxis);
+}
+
+// Add color scheme selector
+document.getElementById("colorScheme").addEventListener("change", function() {
+    switch(this.value) {
+        case "Blues": currentColorScheme = d3.interpolateBlues; break;
+        case "Greens": currentColorScheme = d3.interpolateGreens; break;
+        default: currentColorScheme = d3.interpolateYlOrRd;
+    }
+    renderHeatmap();
+});
+
+// Initialize heatmap
+loadHeatmap();
         
         // Initialize application
         initApp();
