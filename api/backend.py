@@ -4,12 +4,6 @@ from data_processor import HDBDataProcessor #vercel entry
 
 app = Flask(__name__)
 
-# Initialize data processor with cache fallback
-try:
-    processor = HDBDataProcessor(use_api=False, cache_file='hdb_data.parquet')
-except Exception as e:
-    print(f"Data initialization failed: {e}")
-    processor = None
 
 @app.route('/')
 def index():
