@@ -1,6 +1,6 @@
-flask
 pandas
 requests
 pyarrow
 numpy
-vercel-wsgi
+flask==2.3.3
+vercel-wsgi==0.5.3
