@@ -4,6 +4,7 @@ from data_processor import HDBDataProcessor #vercel entry
 
 app = Flask(__name__)
 
+processor = HDBDataProcessor(use_api=False, cache_file='hdb_data.parquet')
 
 @app.route('/')
 def index():
