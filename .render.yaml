@@ -3,5 +3,5 @@ services:
     name: hbd-visualiser
     env: python
     buildCommand: ""
-    startCommand: gunicorn backend:__init__
+    startCommand: gunicorn backend:app
     plan: free
