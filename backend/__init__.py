@@ -46,4 +46,4 @@ def get_heatmap_data():
     return jsonify(heatmap_data.to_dict(orient='records'))
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=True)
