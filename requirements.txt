@@ -3,3 +3,4 @@ pandas
 requests
 pyarrow
 numpy
+vercel-wsgi
