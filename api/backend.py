@@ -1,6 +1,6 @@
 # app.py
 from flask import Flask, jsonify, render_template
-from data_processor import HDBDataProcessor
+from data_processor import HDBDataProcessor #vercel entry
 
 app = Flask(__name__)
 
@@ -15,6 +15,7 @@ except Exception as e:
 def index():
     """Main visualization dashboard"""
     return render_template('index.html')
+
 
 @app.route('/api/towns')
 def get_towns():
