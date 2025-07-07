@@ -2,7 +2,7 @@
 from flask import Flask, jsonify, render_template
 from data_processor import HDBDataProcessor #vercel entry
 
-app = Flask(__name__, template_folder="/templates")
+app = Flask(__name__, template_folder="/")
 
 processor = HDBDataProcessor(use_api=False, cache_file='hdb_data.parquet')
 
