@@ -89,7 +89,7 @@
         // Load initial data
         async function initApp() {
             // Load towns
-            const towns = await fetch('/api/towns').then(res => res.json());
+            const towns = await fetch('/towns').then(res => res.json());
             populateTownDropdown(towns);
             
             // Load heatmap data
@@ -113,7 +113,7 @@
             const town = townSelect.value;
             if (!town) return;
             
-            const data = await fetch(`/api/town/${town}`).then(res => res.json());
+            const data = await fetch(`/town/${town}`).then(res => res.json());
             renderTrendChart(data);
         }
         
@@ -154,7 +154,7 @@
         }
         
         async function loadHeatmap() {
-            const data = await fetch('/api/heatmap').then(res => res.json());
+            const data = await fetch('/heatmap').then(res => res.json());
             renderHeatmap(data);
         }
         
@@ -195,7 +195,7 @@
 let currentColorScheme = d3.interpolateYlOrRd;
 
 async function loadHeatmap() {
-    heatmapData = await fetch('/api/heatmap').then(res => res.json());
+    heatmapData = await fetch('/heatmap').then(res => res.json());
     renderHeatmap();
 }
 

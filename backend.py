@@ -12,14 +12,14 @@ def index():
     return render_template('index.html')
 
 
-@app.route('/api/towns')
+@app.route('/towns')
 def get_towns():
     """Get list of available towns"""
     if not processor:
         return jsonify(["Ang Mo Kio", "Bedok"])  # Fallback
     return jsonify(processor.get_towns())
 
-@app.route('/api/town/<town_name>')
+@app.route('/town/<town_name>')
 def get_town_data(town_name):
     """Get aggregated data for a town"""
     if not processor:
@@ -32,7 +32,7 @@ def get_town_data(town_name):
     town_data = processor.get_town_data(town_name)
     return jsonify(town_data.to_dict(orient='records'))
 
-@app.route('/api/heatmap')
+@app.route('/heatmap')
 def get_heatmap_data():
     """Get data for price heatmap"""
     if not processor:
