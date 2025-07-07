@@ -1,8 +1,13 @@
 # app.py
 from flask import Flask, jsonify, render_template
 from data_processor import HDBDataProcessor #vercel entry
+import os
 
-app = Flask(__name__, template_folder="/")
+
+basedir = os.path.abspath(os.path.dirname(__file__))
+template_dir = os.path.abspath(os.path.join(basedir, '..', 'templates'))
+
+app = Flask(__name__, template_folder=template_dir)
 
 processor = HDBDataProcessor(use_api=False, cache_file='hdb_data.parquet')
 
