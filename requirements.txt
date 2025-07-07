@@ -3,4 +3,4 @@ requests
 pyarrow
 numpy
 flask==2.3.3
-vercel-wsgi==0.5.3
+gunicorn
