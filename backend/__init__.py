@@ -2,7 +2,7 @@
 from flask import Flask, jsonify, render_template
 from data_processor import HDBDataProcessor #vercel entry
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder="/templates")
 
 processor = HDBDataProcessor(use_api=False, cache_file='hdb_data.parquet')
 
@@ -46,4 +46,4 @@ def get_heatmap_data():
     return jsonify(heatmap_data.to_dict(orient='records'))
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=5000)
